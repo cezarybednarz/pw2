@@ -3,39 +3,22 @@
 
 // JAK NA RAZIE DLA CZYTELNOSCI POMINE OBSLUGIWANIE BLEDOW
 
-/* ---- error handling ---- */
-void syserr(int bl, const char *fmt, ...) {
-  va_list fmt_args;
-  fprintf(stderr, "ERROR: ");
-  va_start(fmt_args, fmt);
-  vfprintf(stderr, fmt, fmt_args);
-  va_end (fmt_args);
-  fprintf(stderr," (%d; %s)\n", bl, strerror(bl));
-  exit(1);
-}
+static void *thread_loop(thread_pool_t *pool, pthread_t *thread) {
 
-/* ---- defer queue ---- */
-static int defer_queue_init(defer_queue_t *q) {
-
-  return 0;
-}
-
-static int defer_queue_push(defer_queue_t *q) {
-
-  return 0;
-}
-
-static runnable_t *defer_queue_pop(defer_queue_t *q) {
-
-}
-
-static int defer_queue_destroy(defer_queue_t *q) {
-
-  return 0;
 }
 
 /* ---- thread pool ---- */
 int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
+
+  if(pool == NULL) return -1;
+
+  pool->num_threads = num_threads;
+  pool->defer_queue = new_defer_queue();
+  if(pool->defer_queue == NULL) {
+    return -1;
+  }
+  pool->
+
   return 0;
 }
 
