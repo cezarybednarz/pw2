@@ -13,14 +13,16 @@
 #include "err.h"
 #include "threadpool.h"
 
+typedef struct runnable runnable_t;
+typedef struct node node_t;
+
 typedef struct node {
-  runnable_t* runnable;
-  node*       prev;
+  runnable_t*  runnable;
+  node_t*      prev;
 } node_t;
 
 typedef struct defer_queue {
-  pthread_mutex_t protection;
-  sem_t           not_empty;
+  sem_t           sem_not_empty;
   node_t*         front;
   node_t*         back;
   int             length;

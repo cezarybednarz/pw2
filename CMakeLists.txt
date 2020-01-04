@@ -16,9 +16,9 @@ macro (add_executable _name)
 endmacro()
 
 include_directories(include)
-add_library(asyncc STATIC threadpool.c future.c)
+add_library(asyncc STATIC defer_queue.c threadpool.c future.c)
 add_executable(macierz macierz.c)
-add_executable(silnia silnia.c)
+#add_executable(silnia silnia.c)
 add_subdirectory(test)
 
 install(TARGETS asyncc DESTINATION .)
