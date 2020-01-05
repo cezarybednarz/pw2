@@ -30,7 +30,7 @@ typedef struct defer_queue {
 
 defer_queue *new_defer_queue(void);
 
-int defer_queue_push(defer_queue_t *q);
+int defer_queue_push(defer_queue_t *q, runnable_t *runnable);
 
 runnable_t *defer_queue_pop(defer_queue_t *q);
 

@@ -1,63 +1,82 @@
 #include "threadpool.h"
 
-
-// JAK NA RAZIE DLA CZYTELNOSCI POMINE OBSLUGIWANIE BLEDOW
+#define ERR 1
 
 /* ---- single thread waiting loop ---- */
-static void *thread_loop(thread_t *t) {
+static void *thread_loop(void *pool) {
 
-  // tu mozna dodac jakies obslugiwanie sygnalow itp...
+  thread_pool_t *p = (thread_pool_t*)pool;
+  runnable_t *todo;
 
+  while(true) {
 
-  pthread_mutex_lock(&t->pool->mutex_working_threads);
-  t->pool->num_working_threads++;
-  pthread_mutex_unlock(&t->pool->mutex_working_threads);
+    pthread_mutex_lock(&(p->mutex));
 
-  int id = 0; // to zeby sie clion nie czepial
-  while(++id < 10) {
+    while(!p->destroyed && p->defer_queue->length == 0) {
+      pthread_cond_wait(&(p->condition), &(p->mutex));
+    }
 
-    sem_wait(&t->pool->defer_queue->sem_not_empty);
+    if(p->destroyed && p->defer_queue->length == 0) {
+      break;
+    }
 
-    // sprawdzic czy nie skonczyl sie threadpool
+    todo = defer_queue_pop(p->defer_queue);
 
-    // tutaj skonczylem!!!!
+    pthread_mutex_unlock(&(p->mutex));
+
+    todo->function(todo->arg, todo->argsz);
   }
 
+  p->num_threads_started--;
 
+  pthread_mutex_unlock(&(p->mutex));
 
-
+  pthread_exit(NULL);
 }
 
 /* ---- thread pool ---- */
 int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
 
-  if(pool == NULL) return -1;
+  if(pool == NULL) {
+    return ERR;
+  }
 
   pool->num_threads = num_threads;
-  pool->num_working_threads = 0;
+  pool->num_threads_alive = 0;
+  pool->num_threads_started = 0;
 
-  pool->threads = malloc(num_threads * sizeof(thread_t*));
-  if(pool->threads == NULL) {
-      return -1;
+  if((pool->threads = malloc(num_threads * sizeof(pthread_t*))) == NULL) {
+    return ERR;
   }
-  for(size_t i = 0; i < num_threads; i++) {
-    pthread_create(&pool->threads[i]->pthread, NULL, (void*)thread_loop, pool->threads[i]);
-    pthread_detach(pool->threads[i]->pthread);
-    pool->threads[i]->pool = pool;
-  }
-  while(pool->num_threads_alive < num_threads) { /* czekanie na inicjalizacje */ }
 
-  pool->defer_queue = new_defer_queue();
-  if(pool->defer_queue == NULL) {
+  if((pool->defer_queue = new_defer_queue()) == NULL) {
     free(pool->threads);
-    return -1;
+    return ERR;
   }
 
-  pool->not_destroyed = true;
+  if(pthread_mutex_init(&(pool->mutex), NULL) != 0) {
+    free(pool->threads);
+    defer_queue_destroy(pool->defer_queue);
+    return ERR;
+  }
 
-  pthread_mutex_init(&pool->mutex_working_threads, NULL);
-  pthread_cond_init(&pool->condition_idle, NULL);
+  if(pthread_cond_init(&(pool->condition), NULL) != 0) {
+    free(pool->threads);
+    defer_queue_destroy(pool->defer_queue);
+    if(pthread_mutex_destroy(&(pool->mutex)) != 0) {
+      return ERR;
+    }
+    return ERR;
+  }
 
+  for(size_t i = 0; i < num_threads; i++) {
+    if((pthread_create(pool->threads[i], NULL, thread_loop, (void*)pool) != 0) {
+      thread_pool_destroy(pool);
+      return ERR;
+    }
+    pool->num_threads_alive++;
+    pool->num_threads_started++;
+  }
   return 0;
 }
 
@@ -67,6 +86,30 @@ void thread_pool_destroy(struct thread_pool *pool) {
 
 int defer(struct thread_pool *pool, runnable_t runnable) {
 
+  if(pool == NULL) {
+    return ERR;
+  }
+
+  if(pthread_mutex_lock(&pool->mutex) != 0) {
+    return ERR;
+  }
+
+  do {
+    if(pool->destroyed) {
+      break;
+    }
+
+    defer_queue_push(pool->defer_queue, &runnable);
+
+    if(pthread())
+
+
+
+  } while(0);
+
+  if(pthread_mutex_unlock(&pool->mutex) != 0) {
+    return ERR;
+  }
 
   return 0;
 }

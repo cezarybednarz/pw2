@@ -22,22 +22,17 @@ typedef struct runnable {
   size_t argsz;
 } runnable_t;
 
-typedef struct thread {
-  pthread_t      pthread;
-  thread_pool_t* pool;
-} thread_t;
-
 typedef struct thread_pool {
   size_t           num_threads;
-  size_t           num_working_threads;
+  size_t           num_threads_started;
   size_t           num_threads_alive;
-  
-  thread_t**       threads;
-  defer_queue_t*   defer_queue;
-  bool             not_destroyed;
 
-  pthread_mutex_t  mutex_working_threads;
-  pthread_cond_t   condition_idle;
+  pthread_t**      threads;
+  defer_queue_t*   defer_queue;
+  bool             destroyed;
+
+  pthread_mutex_t  mutex;
+  pthread_cond_t   condition;
 
 } thread_pool_t;
 
