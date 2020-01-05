@@ -94,21 +94,20 @@ int defer(struct thread_pool *pool, runnable_t runnable) {
     return ERR;
   }
 
-  do {
-    if(pool->destroyed) {
-      break;
+  if(pool->destroyed) {
+    if(pthread_mutex_unlock(&pool->mutex) != 0) {
+      return ERR;
     }
+  }
+  else {
 
     defer_queue_push(pool->defer_queue, &runnable);
 
-    if(pthread())
-
-
-
-  } while(0);
-
-  if(pthread_mutex_unlock(&pool->mutex) != 0) {
-    return ERR;
+    if(pthread_cond_signal(&(pool->condition)) != 0) {
+      if(pthread_mutex_unlock(&pool->mutex) != 0) {
+        return ERR;
+      }
+    }
   }
 
   return 0;

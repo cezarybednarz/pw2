@@ -8,16 +8,25 @@ defer_queue_t *new_defer_queue(void) {
     return NULL;
   }
 
-  sem_init(&(queue->sem_not_empty), 0, 0);
   queue->front = NULL;
   queue->back = NULL;
   queue->length = 0;
 
-  return 0;
+  return queue;
 }
 
 int defer_queue_push(defer_queue_t *q) {
+  node_t *node = malloc(sizeof(node));
+  if(node == NULL) {
+    return -1;
+  }
 
+  if(q->length == 0) {
+    // tutaj skonczylem
+  }
+  else {
+
+  }
   return 0;
 }
 

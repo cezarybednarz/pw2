@@ -22,7 +22,6 @@ typedef struct node {
 } node_t;
 
 typedef struct defer_queue {
-  sem_t           sem_not_empty;
   node_t*         front;
   node_t*         back;
   int             length;
