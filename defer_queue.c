@@ -22,7 +22,6 @@ int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
   }
 
   node->runnable = runnable;
-  q->length++;
 
   if(q->length == 0) {
     q->front = node;
@@ -32,6 +31,9 @@ int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
     q->back->prev = node;
     q->back = node;
   }
+
+  q->length++;
+
   return 0;
 }
 

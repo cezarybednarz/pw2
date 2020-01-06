@@ -39,4 +39,4 @@ void thread_pool_destroy(thread_pool_t *pool);
 
 int defer(thread_pool_t *pool, runnable_t runnable);
 
-#endif
+#endif // THREADPOOL_H
