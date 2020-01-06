@@ -37,10 +37,9 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
   }
 
   pool->num_threads = num_threads;
-  pool->num_threads_alive = 0;
   pool->num_threads_started = 0;
 
-  if((pool->threads = malloc(num_threads * sizeof(pthread_t*))) == NULL) {
+  if((pool->threads = malloc(num_threads * sizeof(pthread_t))) == NULL) {
     return ERR;
   }
 
@@ -65,18 +64,51 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
   }
 
   for(size_t i = 0; i < num_threads; i++) {
-    if((pthread_create(pool->threads[i], NULL, thread_loop, (void*)pool) != 0) {
+    if((pthread_create(&(pool->threads[i]), NULL, thread_loop, (void*)pool) != 0) {
       thread_pool_destroy(pool);
       return ERR;
     }
-    pool->num_threads_alive++;
     pool->num_threads_started++;
   }
   return 0;
 }
 
 void thread_pool_destroy(struct thread_pool *pool) {
+  if(pool == NULL) {
+    exit(ERR);
+  }
 
+  if(pthread_mutex_lock(&(pool->mutex)) != 0) {
+    exit(ERR);
+  }
+
+  if(pool->destroyed) {
+    exit(ERR);
+  }
+
+  pool->destroyed = true;
+
+  if(pthread_cond_broadcast(&(pool->condition)) != 0 ||
+     pthread_mutex_unlock(&(pool->mutex)) != 0) {
+    exit(ERR);
+  }
+
+  for(int i = 0; i < pool->num_threads_started; i++) {
+    if(pthread_join(pool->threads[i], NULL) != 0) {
+      exit(ERR);
+    }
+  }
+
+  if(pool->num_threads_started > 0) {
+    exit(ERR);
+  }
+
+  free(pool->threads);
+  defer_queue_destroy(pool->defer_queue);
+
+  pthread_mutex_lock(&(pool->mutex));
+  pthread_mutex_destroy(&(pool->mutex));
+  pthread_cond_destroy(&(pool->condition));
 }
 
 int defer(struct thread_pool *pool, runnable_t runnable) {

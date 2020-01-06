@@ -25,9 +25,8 @@ typedef struct runnable {
 typedef struct thread_pool {
   size_t           num_threads;
   size_t           num_threads_started;
-  size_t           num_threads_alive;
 
-  pthread_t**      threads;
+  pthread_t*       threads;
   defer_queue_t*   defer_queue;
   bool             destroyed;
 
