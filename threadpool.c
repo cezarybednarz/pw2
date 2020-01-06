@@ -36,7 +36,6 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
     return ERR;
   }
 
-  pool->num_threads = num_threads;
   pool->num_threads_started = 0;
 
   if((pool->threads = malloc(num_threads * sizeof(pthread_t))) == NULL) {
@@ -64,7 +63,7 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
   }
 
   for(size_t i = 0; i < num_threads; i++) {
-    if((pthread_create(&(pool->threads[i]), NULL, thread_loop, (void*)pool) != 0) {
+    if(pthread_create(&(pool->threads[i]), NULL, thread_loop, (void*)pool) != 0) {
       thread_pool_destroy(pool);
       return ERR;
     }

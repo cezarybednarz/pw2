@@ -14,7 +14,6 @@
 #include "err.h"
 #include "defer_queue.h"
 
-typedef struct thread_pool thread_pool_t;
 
 typedef struct runnable {
   void (*function)(void *, size_t);
@@ -23,12 +22,11 @@ typedef struct runnable {
 } runnable_t;
 
 typedef struct thread_pool {
-  size_t           num_threads;
-  size_t           num_threads_started;
+  size_t num_threads_started;
 
-  pthread_t*       threads;
-  defer_queue_t*   defer_queue;
-  bool             destroyed;
+  pthread_t*          threads;
+  struct defer_queue* defer_queue;
+  bool                destroyed;
 
   pthread_mutex_t  mutex;
   pthread_cond_t   condition;
