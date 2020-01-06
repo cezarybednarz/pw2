@@ -27,13 +27,13 @@ typedef struct defer_queue {
   int             length;
 } defer_queue_t;
 
-defer_queue *new_defer_queue(void);
+defer_queue_t *new_defer_queue(void);
 
 int defer_queue_push(defer_queue_t *q, runnable_t *runnable);
 
 runnable_t *defer_queue_pop(defer_queue_t *q);
 
-int defer_queue_destroy(defer_queue_t *q);
+void defer_queue_destroy(defer_queue_t *q);
 
 
 #endif //DEFER_QUEUE_H

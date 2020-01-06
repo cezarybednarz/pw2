@@ -9,7 +9,6 @@ static void *thread_loop(void *pool) {
   runnable_t *todo;
 
   while(true) {
-
     pthread_mutex_lock(&(p->mutex));
 
     while(!p->destroyed && p->defer_queue->length == 0) {
@@ -21,16 +20,12 @@ static void *thread_loop(void *pool) {
     }
 
     todo = defer_queue_pop(p->defer_queue);
-
     pthread_mutex_unlock(&(p->mutex));
-
     todo->function(todo->arg, todo->argsz);
   }
 
   p->num_threads_started--;
-
   pthread_mutex_unlock(&(p->mutex));
-
   pthread_exit(NULL);
 }
 

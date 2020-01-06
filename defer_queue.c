@@ -15,26 +15,40 @@ defer_queue_t *new_defer_queue(void) {
   return queue;
 }
 
-int defer_queue_push(defer_queue_t *q) {
-  node_t *node = malloc(sizeof(node));
+int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
+  node_t *node = malloc(sizeof(node_t));
   if(node == NULL) {
     return -1;
   }
 
+  node->runnable = runnable;
+  q->length++;
+
   if(q->length == 0) {
-    // tutaj skonczylem
+    q->front = node;
+    q->back = node;
   }
   else {
-
+    q->back->prev = node;
+    q->back = node;
   }
   return 0;
 }
 
 runnable_t *defer_queue_pop(defer_queue_t *q) {
+  runnable_t *ret = q->front->runnable;
 
+  if(q->length > 1) {
+    q->front = q->front->prev;
+  }
+
+  free(q->front);
+  q->length--;
+  return ret;
 }
 
-int defer_queue_destroy(defer_queue_t *q) {
-
-  return 0;
+void defer_queue_destroy(defer_queue_t *q) {
+  while(q->length > 0) {
+    defer_queue_pop(q);
+  }
 }
