@@ -15,16 +15,6 @@ defer_queue_t *new_defer_queue(void) {
   return queue;
 }
 
-void defer_queue_print(defer_queue_t *q) {
-  node_t *node = q->back;
-  printf("queue of size %d: \n", (int)q->length);
-  printf("[%zu] ", node->runnable->argsz);
-  for(int i = 0; i < q->length - 1; i++) {
-    node = node->prev;
-    printf("[%zu] ", node->runnable->argsz);
-  }
-}
-
 int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
   node_t *node = (node_t*)malloc(sizeof(node_t));
   if(node == NULL) {

@@ -40,14 +40,14 @@ int main() {
 
 
   thread_pool_t *pool = (thread_pool_t*)malloc(sizeof(thread_pool_t));
-  thread_pool_init(pool, 2);
+  thread_pool_init(pool, 4);
 
   runnable_t rA = (runnable_t) {.function = wypiszA,.arg = NULL,.argsz = 420};
   defer(pool, rA);
 
-  //defer(pool, (runnable_t) {.function = wypiszB,.arg = NULL,.argsz = 69});
+  defer(pool, (runnable_t) {.function = wypiszB,.arg = NULL,.argsz = 69});
 
-  sleep(2);
+  //sleep(2);
   printf("zaczynam destroy\n");
   thread_pool_destroy(pool);
   printf("skonczylem destroy\n");

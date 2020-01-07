@@ -5,8 +5,6 @@
 /* ---- single thread waiting loop ---- */
 static void *thread_loop(void *pool) {
 
-  printf("Zaczynam watek\n");
-
   thread_pool_t *p = (thread_pool_t*)pool;
   runnable_t *todo;
 
@@ -21,14 +19,11 @@ static void *thread_loop(void *pool) {
       break;
     }
 
-    defer_queue_print(p->defer_queue);
-
     todo = defer_queue_pop(p->defer_queue);
     pthread_mutex_unlock(&(p->mutex));
     todo->function(todo->arg, todo->argsz);
+    free(todo);
   }
-
-  printf("Koncze watek\n");
 
   p->num_threads_started--;
   pthread_mutex_unlock(&(p->mutex));
@@ -43,6 +38,7 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
   }
 
   pool->num_threads_started = 0;
+  pool->num_threads = 0;
   pool->destroyed = false;
 
   if((pool->threads = (pthread_t*)malloc(num_threads * sizeof(pthread_t))) == NULL) {
@@ -75,6 +71,7 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
       return ERR;
     }
     pool->num_threads_started++;
+    pool->num_threads++;
   }
   return 0;
 }
@@ -99,7 +96,7 @@ void thread_pool_destroy(struct thread_pool *pool) {
     exit(ERR);
   }
 
-  for(size_t i = 0; i < pool->num_threads_started; i++) {
+  for(size_t i = 0; i < pool->num_threads; i++) {
     if(pthread_join(pool->threads[i], NULL) != 0) {
       exit(ERR);
     }
@@ -126,14 +123,17 @@ int defer(struct thread_pool *pool, runnable_t runnable) {
   if(pthread_mutex_lock(&(pool->mutex)) != 0) {
     return ERR;
   }
-  printf("glowny sekcja kryt\n");
   if(pool->destroyed) {
     if(pthread_mutex_unlock(&(pool->mutex)) != 0) {
       return ERR;
     }
   }
   else {
-    defer_queue_push(pool->defer_queue, &runnable);
+    runnable_t *new_runnable = malloc(sizeof(runnable));
+    new_runnable->function = runnable.function;
+    new_runnable->arg = runnable.arg;
+    new_runnable->argsz = runnable.argsz;
+    defer_queue_push(pool->defer_queue, new_runnable);
 
     if(pthread_cond_signal(&(pool->condition)) != 0) {
       if(pthread_mutex_unlock(&(pool->mutex)) != 0) {
