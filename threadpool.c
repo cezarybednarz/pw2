@@ -1,9 +1,11 @@
 #include "threadpool.h"
 
-#define ERR 1
+#define ERR -1
 
 /* ---- single thread waiting loop ---- */
 static void *thread_loop(void *pool) {
+
+  printf("Zaczynam watek\n");
 
   thread_pool_t *p = (thread_pool_t*)pool;
   runnable_t *todo;
@@ -19,10 +21,14 @@ static void *thread_loop(void *pool) {
       break;
     }
 
+    defer_queue_print(p->defer_queue);
+
     todo = defer_queue_pop(p->defer_queue);
     pthread_mutex_unlock(&(p->mutex));
     todo->function(todo->arg, todo->argsz);
   }
+
+  printf("Koncze watek\n");
 
   p->num_threads_started--;
   pthread_mutex_unlock(&(p->mutex));
@@ -37,8 +43,9 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
   }
 
   pool->num_threads_started = 0;
+  pool->destroyed = false;
 
-  if((pool->threads = malloc(num_threads * sizeof(pthread_t))) == NULL) {
+  if((pool->threads = (pthread_t*)malloc(num_threads * sizeof(pthread_t))) == NULL) {
     return ERR;
   }
 
@@ -92,7 +99,7 @@ void thread_pool_destroy(struct thread_pool *pool) {
     exit(ERR);
   }
 
-  for(int i = 0; i < pool->num_threads_started; i++) {
+  for(size_t i = 0; i < pool->num_threads_started; i++) {
     if(pthread_join(pool->threads[i], NULL) != 0) {
       exit(ERR);
     }
@@ -119,20 +126,23 @@ int defer(struct thread_pool *pool, runnable_t runnable) {
   if(pthread_mutex_lock(&(pool->mutex)) != 0) {
     return ERR;
   }
-
+  printf("glowny sekcja kryt\n");
   if(pool->destroyed) {
     if(pthread_mutex_unlock(&(pool->mutex)) != 0) {
       return ERR;
     }
   }
   else {
-
     defer_queue_push(pool->defer_queue, &runnable);
 
     if(pthread_cond_signal(&(pool->condition)) != 0) {
       if(pthread_mutex_unlock(&(pool->mutex)) != 0) {
         return ERR;
       }
+      return ERR;
+    }
+    if(pthread_mutex_unlock(&(pool->mutex)) != 0) {
+      return ERR;
     }
   }
 

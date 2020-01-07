@@ -35,5 +35,8 @@ runnable_t *defer_queue_pop(defer_queue_t *q);
 
 void defer_queue_destroy(defer_queue_t *q);
 
+void defer_queue_print(defer_queue_t *q);
+
+
 
 #endif //DEFER_QUEUE_H
