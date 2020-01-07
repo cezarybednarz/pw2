@@ -15,11 +15,11 @@
 #include "err.h"
 #include "queue.h"
 
-/* ---- SIGINT handling ---- */
-bool pool_init;
-pthread_mutex_t mutex;
+/* ---- signal handling ---- */
+pthread_mutex_t pools_queue_mutex;
+struct queue *pools_queue;
 
-
+/* ---- threadpool ---- */
 typedef struct runnable {
   void (*function)(void *, size_t);
   void*  arg;

@@ -2,6 +2,49 @@
 
 #define ERR -1
 
+/* ---- sigaction handling ---- */
+void __attribute__((destructor)) destroy_signals() {
+  pthread_mutex_destroy(&pools_queue_mutex);
+  queue_destroy(pools_queue);
+}
+
+static void termination_handler(int sig_id __attribute__((unused))) {
+  printf("JESTEM W TERMINATION HANDLER!\n");
+
+  if(pthread_mutex_lock(&pools_queue_mutex) != 0) {
+    exit(ERR);
+  }
+
+  printf("pools_queue->length = %d", pools_queue->length);
+  while(pools_queue->length > 0) {
+    thread_pool_t *pool = queue_pop(pools_queue);
+    thread_pool_destroy(pool);
+  }
+
+  if(pthread_mutex_unlock(&pools_queue_mutex) != 0) {
+    exit(ERR);
+  }
+
+  destroy_signals();
+}
+
+void __attribute__((constructor)) init_signals() {
+  struct sigaction new_action, old_action;
+  new_action.sa_handler = termination_handler;
+  sigemptyset(&new_action.sa_mask);
+  sigaddset(&new_action.sa_mask, SIGTERM);
+  new_action.sa_flags = 0;
+  sigaction(SIGINT, NULL, &old_action);
+  if(old_action.sa_handler != SIG_IGN) {
+    sigaction(SIGINT,&new_action,NULL);
+  }
+
+  pthread_mutex_init(&pools_queue_mutex, NULL);
+  pools_queue = new_queue();
+}
+
+
+
 /* ---- single thread waiting loop ---- */
 static void *thread_loop(void *pool) {
 
@@ -30,11 +73,6 @@ static void *thread_loop(void *pool) {
   pthread_exit(NULL);
 }
 
-/* ---- sigaction handling ---- */
-static void clear_pools(int sig_id __attribute__((unused))) {
-  printf("xd");
-}
-
 /* ---- thread pool ---- */
 int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
 
@@ -42,14 +80,17 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
     return ERR;
   }
 
-  struct sigaction sig_act;
-  sigemptyset(&sig_act.sa_mask);
-  sig_act.sa_flags = 0;
-  sig_act.sa_handler = clear_pools;
-  if(sigaction(SIGINT, &sig_act, NULL) != 0) {
+
+  /* initialising global list of thread_pools and changing default behaviour to SIGINT */
+  if(pthread_mutex_lock(&pools_queue_mutex) != 0) {
     return ERR;
   }
 
+  queue_push(pools_queue, (void*)pool);
+
+  if(pthread_mutex_unlock(&pools_queue_mutex) != 0) {
+    return ERR;
+  }
 
   pool->num_threads_started = 0;
   pool->num_threads = 0;
