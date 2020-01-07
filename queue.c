@@ -1,9 +1,9 @@
-#include "defer_queue.h"
+#include "queue.h"
 
-/* ---- defer queue ---- */
-defer_queue_t *new_defer_queue(void) {
+/* ---- queue ---- */
+queue_t *new_queue(void) {
 
-  defer_queue_t *queue = (defer_queue_t*)malloc(sizeof(defer_queue_t));
+  queue_t *queue = (queue_t*)malloc(sizeof(queue_t));
   if(queue == NULL) {
     return NULL;
   }
@@ -15,13 +15,13 @@ defer_queue_t *new_defer_queue(void) {
   return queue;
 }
 
-int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
+int queue_push(queue_t *q, void *data) {
   node_t *node = (node_t*)malloc(sizeof(node_t));
   if(node == NULL) {
     return -1;
   }
 
-  node->runnable = runnable;
+  node->data = data;
 
   if(q->length == 0) {
     q->front = node;
@@ -37,8 +37,8 @@ int defer_queue_push(defer_queue_t *q, runnable_t *runnable) {
   return 0;
 }
 
-runnable_t *defer_queue_pop(defer_queue_t *q) {
-  runnable_t *ret = q->back->runnable;
+void *queue_pop(queue_t *q) {
+  node_t *ret = q->back->data;
 
   node_t *back = q->back;
 
@@ -52,9 +52,9 @@ runnable_t *defer_queue_pop(defer_queue_t *q) {
   return ret;
 }
 
-void defer_queue_destroy(defer_queue_t *q) {
+void queue_destroy(queue_t *q) {
   while(q->length > 0) {
-    defer_queue_pop(q);
+    queue_pop(q);
   }
   free(q);
 }

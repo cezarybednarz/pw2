@@ -13,27 +13,26 @@
 #include "err.h"
 #include "threadpool.h"
 
-typedef struct runnable runnable_t;
 typedef struct node node_t;
 
 typedef struct node {
-  runnable_t*  runnable;
+  void*        data;
   node_t*      prev;
 } node_t;
 
-typedef struct defer_queue {
+typedef struct queue {
   node_t*         front;
   node_t*         back;
   int             length;
-} defer_queue_t;
+} queue_t;
 
-defer_queue_t *new_defer_queue(void);
+queue_t *new_queue(void);
 
-int defer_queue_push(defer_queue_t *q, runnable_t *runnable);
+int queue_push(queue_t *q, void *data);
 
-runnable_t *defer_queue_pop(defer_queue_t *q);
+void *queue_pop(queue_t *q);
 
-void defer_queue_destroy(defer_queue_t *q);
+void queue_destroy(queue_t *q);
 
 
 

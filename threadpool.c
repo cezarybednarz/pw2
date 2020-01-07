@@ -19,7 +19,7 @@ static void *thread_loop(void *pool) {
       break;
     }
 
-    todo = defer_queue_pop(p->defer_queue);
+    todo = (runnable_t*)queue_pop(p->defer_queue);
     pthread_mutex_unlock(&(p->mutex));
     todo->function(todo->arg, todo->argsz);
     free(todo);
@@ -30,12 +30,26 @@ static void *thread_loop(void *pool) {
   pthread_exit(NULL);
 }
 
+/* ---- sigaction handling ---- */
+static void clear_pools(int sig_id __attribute__((unused))) {
+  printf("xd");
+}
+
 /* ---- thread pool ---- */
 int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
 
   if(pool == NULL) {
     return ERR;
   }
+
+  struct sigaction sig_act;
+  sigemptyset(&sig_act.sa_mask);
+  sig_act.sa_flags = 0;
+  sig_act.sa_handler = clear_pools;
+  if(sigaction(SIGINT, &sig_act, NULL) != 0) {
+    return ERR;
+  }
+
 
   pool->num_threads_started = 0;
   pool->num_threads = 0;
@@ -45,20 +59,20 @@ int thread_pool_init(thread_pool_t *pool, size_t num_threads) {
     return ERR;
   }
 
-  if((pool->defer_queue = new_defer_queue()) == NULL) {
+  if((pool->defer_queue = new_queue()) == NULL) {
     free(pool->threads);
     return ERR;
   }
 
   if(pthread_mutex_init(&(pool->mutex), NULL) != 0) {
     free(pool->threads);
-    defer_queue_destroy(pool->defer_queue);
+    queue_destroy(pool->defer_queue);
     return ERR;
   }
 
   if(pthread_cond_init(&(pool->condition), NULL) != 0) {
     free(pool->threads);
-    defer_queue_destroy(pool->defer_queue);
+    queue_destroy(pool->defer_queue);
     if(pthread_mutex_destroy(&(pool->mutex)) != 0) {
       return ERR;
     }
@@ -107,7 +121,7 @@ void thread_pool_destroy(struct thread_pool *pool) {
   }
 
   free(pool->threads);
-  defer_queue_destroy(pool->defer_queue);
+  queue_destroy(pool->defer_queue);
 
   pthread_mutex_lock(&(pool->mutex));
   pthread_mutex_destroy(&(pool->mutex));
@@ -133,7 +147,7 @@ int defer(struct thread_pool *pool, runnable_t runnable) {
     new_runnable->function = runnable.function;
     new_runnable->arg = runnable.arg;
     new_runnable->argsz = runnable.argsz;
-    defer_queue_push(pool->defer_queue, new_runnable);
+    queue_push(pool->defer_queue, (void*)new_runnable);
 
     if(pthread_cond_signal(&(pool->condition)) != 0) {
       if(pthread_mutex_unlock(&(pool->mutex)) != 0) {

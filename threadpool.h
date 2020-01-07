@@ -8,11 +8,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <signal.h>
 
 #include <stdarg.h>
 #include <string.h>
 #include "err.h"
-#include "defer_queue.h"
+#include "queue.h"
+
+/* ---- SIGINT handling ---- */
+bool pool_init;
+pthread_mutex_t mutex;
 
 
 typedef struct runnable {
@@ -25,9 +30,9 @@ typedef struct thread_pool {
   size_t num_threads;
   size_t num_threads_started;
 
-  pthread_t*          threads;
-  struct defer_queue* defer_queue;
-  bool                destroyed;
+  pthread_t*     threads;
+  struct queue*  defer_queue;
+  bool           destroyed;
 
   pthread_mutex_t  mutex;
   pthread_cond_t   condition;
