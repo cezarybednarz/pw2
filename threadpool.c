@@ -15,12 +15,9 @@ static void termination_handler(int sig_id __attribute__((unused))) {
     exit(ERR);
   }
 
-  printf("pools_queue->length = %d\n", pools_queue->length);
   while(pools_queue->length > 0) {
-    printf("zabijam pule!\n");
     thread_pool_t *pool = queue_pop(pools_queue);
     thread_pool_destroy(pool);
-    printf("pula zabita...\n");
   }
 
   destroy_signals();
