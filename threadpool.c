@@ -15,14 +15,12 @@ static void termination_handler(int sig_id __attribute__((unused))) {
     exit(ERR);
   }
 
-  printf("pools_queue->length = %d", pools_queue->length);
+  printf("pools_queue->length = %d\n", pools_queue->length);
   while(pools_queue->length > 0) {
+    printf("zabijam pule!\n");
     thread_pool_t *pool = queue_pop(pools_queue);
     thread_pool_destroy(pool);
-  }
-
-  if(pthread_mutex_unlock(&pools_queue_mutex) != 0) {
-    exit(ERR);
+    printf("pula zabita...\n");
   }
 
   destroy_signals();
@@ -36,7 +34,7 @@ void __attribute__((constructor)) init_signals() {
   new_action.sa_flags = 0;
   sigaction(SIGINT, NULL, &old_action);
   if(old_action.sa_handler != SIG_IGN) {
-    sigaction(SIGINT,&new_action,NULL);
+    sigaction(SIGINT, &new_action, NULL);
   }
 
   pthread_mutex_init(&pools_queue_mutex, NULL);
@@ -70,7 +68,6 @@ static void *thread_loop(void *pool) {
 
   p->num_threads_started--;
   pthread_mutex_unlock(&(p->mutex));
-  pthread_exit(NULL);
 }
 
 /* ---- thread pool ---- */
@@ -141,7 +138,7 @@ void thread_pool_destroy(struct thread_pool *pool) {
   }
 
   if(pool->destroyed) {
-    exit(ERR);
+    return;
   }
 
   pool->destroyed = true;
